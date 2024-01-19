@@ -7,13 +7,20 @@ import (
 	"fmt"
 	"os"
 
+	rlog "github.com/sirupsen/logrus"
+	sf "github.com/snowflakedb/gosnowflake"
+
 	"github.com/apache/arrow/go/v14/arrow/memory"
-	"github.com/snowflakedb/gosnowflake"
 )
 
 func main() {
-	ctx := gosnowflake.WithArrowAllocator(
-		gosnowflake.WithArrowBatches(context.Background()),
+	mylog := sf.GetLogger()
+	mylog.SetLogLevel("debug")
+	mylog.SetOutput(os.Stdout)
+	sf.SetLogger(&mylog)
+
+	ctx := sf.WithArrowAllocator(
+		sf.WithArrowBatches(context.Background()),
 		memory.DefaultAllocator,
 	)
 
@@ -48,19 +55,40 @@ func main() {
 	// actual: panic here
 	// panic: runtime error: invalid memory address or nil pointer dereference
 	// [signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x1025fb9]
-	
+
 	// goroutine 1 [running]:
-	// github.com/snowflakedb/gosnowflake.(*snowflakeChunkDownloader).getArrowBatches(0xc0003ebe20?)
+	// github.com/snowflakedb/sf.(*snowflakeChunkDownloader).getArrowBatches(0xc0003ebe20?)
 	// 		github.com/snowflakedb/gosnowflake@v1.7.2/chunk_downloader.go:252 +0x19
-	// github.com/snowflakedb/gosnowflake.(*snowflakeRows).GetArrowBatches(0xc0000d05b0?)
+	// github.com/snowflakedb/sf.(*snowflakeRows).GetArrowBatches(0xc0000d05b0?)
 	// 		github.com/snowflakedb/gosnowflake@v1.7.2/rows.go:171 +0x162
 	// main.main()
 	// 		github.com/vtan-fortinet/musical-octo-funicular/main.go:59 +0x27a
-	batches, err := rows.(gosnowflake.SnowflakeRows).GetArrowBatches()
+	batches, err := rows.(sf.SnowflakeRows).GetArrowBatches()
 	if err != nil {
 		panic(err)
 	}
 
 	// expected: len 0
 	fmt.Println(`we happy, len`, len(batches))
+}
+
+type testLogger struct {
+	*rlog.Logger
+}
+
+func (log *testLogger) SetLogLevel(level string) error {
+	actualLevel, err := rlog.ParseLevel(level)
+	if err != nil {
+		return err
+	}
+	log.Level = actualLevel
+	return nil
+}
+
+func createTestLogger() testLogger {
+	var logging = testLogger{rlog.New()}
+	var formatter = rlog.JSONFormatter{CallerPrettyfier: sf.SFCallerPrettyfier}
+	logging.SetReportCaller(true)
+	logging.SetFormatter(&formatter)
+	return logging
 }

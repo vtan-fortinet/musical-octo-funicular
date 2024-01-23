@@ -44,7 +44,7 @@ func main() {
 
 	var rows driver.Rows
 	err = conn.Raw(func(x interface{}) error {
-		rows, err = x.(driver.QueryerContext).QueryContext(ctx, `SELECT $1 FROM (VALUES (1)) WHERE $1 = 2;`, nil)
+		rows, err = x.(driver.QueryerContext).QueryContext(ctx, `select 0 where 1 = 0`, nil)
 		return err
 	})
 	if err != nil {

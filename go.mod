@@ -5,7 +5,7 @@ go 1.21.6
 require (
 	github.com/apache/arrow/go/v14 v14.0.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/snowflakedb/gosnowflake v1.7.2
+	github.com/snowflakedb/gosnowflake v1.7.3-0.20240125130750-7b3319d83370
 )
 
 require (
